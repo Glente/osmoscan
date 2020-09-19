@@ -93,7 +93,10 @@ ui<-(pageWithSidebar(
         icon("hospital"), 
         HTML("<i>Andreas Glenthøj, Danish Center for Hemoglobinopathies<br></i>"),
         icon("envelope"), 
-        tags$a(href="mailto:andreas.glenthoej@regionh.dk", "andreas.glenthoej@regionh.dk")
+        tags$a(href="mailto:andreas.glenthoej@regionh.dk", "andreas.glenthoej@regionh.dk"),
+        HTML("<br>"),
+        icon("github"), 
+        tags$a(href="https://github.com/Glente/osmoscan", "Github")
           ),
         
         
