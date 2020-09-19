@@ -9,8 +9,6 @@ After installing both of these, you can just run “app.R” and it should insta
 
 Comments/suggestions are welcome!
 
-Andreas Glenthøj
-
-Danish Center for Hemoglobinopathies
+Andreas Glenthøj, Danish Center for Hemoglobinopathies
 
 andreas.glenthoej@regionh.dk
