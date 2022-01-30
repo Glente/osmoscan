@@ -1,5 +1,5 @@
 #Packages
-list.of.packages <- c("shiny","readr","plotly", "magrittr")
+list.of.packages <- c("shiny","readr","plotly", "magrittr", "stringr")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -7,6 +7,7 @@ library(shiny)
 library(readr)
 library(plotly)
 library(magrittr)
+library(stringr)
 
 #Parameters ----
 ekta_col_names <- c("#", "tstart", "tend", "t", "Crdcnt", "Area", "SdA", "B", "SdB", "EI", "SdEI", "Eof", "O")
@@ -68,16 +69,14 @@ ui<-(pageWithSidebar(
       checkboxInput("lines", "Lines", value = TRUE, width = NULL),
       checkboxInput("annotations", "Annotations", value = TRUE, width = NULL),
       
+      #CSV file format. Default is EU
+      radioButtons("format","CSV format", c("EU" = "EU", "US/UK" = "US"), selected = "EU", inline=T),
       
       # Choose image format for plotly ----
-      selectInput ("image", "Image save format",
-                   choices = c(png = "png",
-                               jpeg = "jpeg",
-                               svg = "svg"),
-                               selected = "png"),
+      radioButtons ("image", "Image save format", choices = c(png = "png", jpeg = "jpeg", svg = "svg"), selected = "png", inline=T),
       
       actionButton("browser", "Debug"),
-      tags$script("$('#browser').hide();")
+      #tags$script("$('#browser').hide();")
       
           
     ),
@@ -91,7 +90,7 @@ ui<-(pageWithSidebar(
         
         tags$hr(),     
         icon("hospital"), 
-        HTML("<i>Andreas Glenthøj, Danish Center for Hemoglobinopathies<br></i>"),
+        HTML("<i>Andreas GlenthÃ¸j, Danish Center for Hemoglobinopathies<br></i>"),
         icon("envelope"), 
         tags$a(href="mailto:andreas.glenthoej@regionh.dk", "andreas.glenthoej@regionh.dk"),
         HTML("<br>"),
@@ -130,34 +129,38 @@ server <- function(input, output) {
   
 #Basisudregninger ----    
   
+  #Find line with "#"
+  
+  file1_line <- reactive({req(input$file1)
+    read_lines(input$file1$datapath) %>% str_which("#")})
+  file2_line <- reactive({req(input$file2)
+    read_lines(input$file2$datapath) %>% str_which("#")})
+  file3_line <- reactive({req(input$file3)
+    read_lines(input$file3$datapath) %>% str_which("#")})
+  
   #import O and EI ----
   
     #file1
   file1 <- reactive({
     req(input$file1)
+    if(input$format=='EU') {file1 <- read_csv2(input$file1$datapath, skip = (file1_line()-1))    }
+    else
+    if(input$format=='US') {file1 <- read_csv(input$file1$datapath, skip = (file1_line()-1))    }
     
-    
-    file1 <- read_csv2(input$file1$datapath,
-                         skip = 27,
-                         col_names = ekta_col_names,
-                         col_types = cols_only(O = col_double(), EI = col_double())
-                        )
-    file1 <- file1[!(file1$O > 600),]
-    file1 <- file1[!(file1$O < 100),]
+    file1 <- file1[!(file1$O. > 600),]
+    file1 <- file1[!(file1$O. < 100),]
     
   })
   
     #file2
   file2 <- reactive({
     req(input$file2)
+    if(input$format=='EU') {file2 <- read_csv2(input$file2$datapath, skip = (file2_line()-1))    }
+    else
+    if(input$format=='US') {file2 <- read_csv(input$file2$datapath, skip = (file2_line()-1))    }
     
-    file2 <- read_csv2(input$file2$datapath,
-                         skip = 27,
-                         col_names = ekta_col_names,
-                         col_types = cols_only(O = col_double(), EI = col_double())
-    )
-    file2 <- file2[!(file2$O > 600),]
-    file2 <- file2[!(file2$O < 100),]
+    file2 <- file2[!(file2$O. > 600),]
+    file2 <- file2[!(file2$O. < 100),]
     
     })
   
@@ -165,31 +168,35 @@ server <- function(input, output) {
   file3 <- reactive({
     req(input$file3)
     
-    file3 <- read_csv2(input$file3$datapath,
-                         skip = 27,
-                         col_names = ekta_col_names,
-                         col_types = cols_only(O = col_double(), EI = col_double())
-    )
-    file3 <- file3[!(file3$O > 600),]
-    file3 <- file3[!(file3$O < 100),]
+    if(input$format=='EU') {file3 <- read_csv2(input$file3$datapath, skip = (file3_line()-1))    }
+    else
+    if(input$format=='US') {file3 <- read_csv(input$file3$datapath, skip = (file3_line()-1))    }
+    
+    file3 <- file3[!(file3$O. > 600),]
+    file3 <- file3[!(file3$O. < 100),]
     
   })
   
   ##Generate file info ----
   file1_info <- reactive({
     req(input$file1)
-    read_csv2(input$file1$datapath, n_max=26, col_names = c("parameter","value"))
-    
+    if(input$format=='EU') {read_csv2(input$file1$datapath, n_max=(file1_line()-1), col_names = c("parameter","value")) }
+    else
+    if(input$format=='US') {read_csv(input$file1$datapath, n_max=(file1_line()-1), col_names = c("parameter","value")) }
   })
 
   file2_info <- reactive({
     req(input$file2)
-    read_csv2(input$file2$datapath, n_max=26, col_names = c("parameter","value"))
+    if(input$format=='EU') {read_csv2(input$file2$datapath, n_max=(file2_line()-1), col_names = c("parameter","value")) }
+    else
+    if(input$format=='US') {read_csv(input$file2$datapath, n_max=(file2_line()-1), col_names = c("parameter","value")) }
     })
   
   file3_info <- reactive({
     req(input$file3)
-    read_csv2(input$file3$datapath, n_max=26, col_names = c("parameter","value"))
+    if(input$format=='EU') {read_csv2(input$file3$datapath, n_max=(file3_line()-1), col_names = c("parameter","value")) }
+    else
+    if(input$format=='US') {read_csv(input$file3$datapath, n_max=(file3_line()-1), col_names = c("parameter","value")) }
   })
   
 
@@ -222,7 +229,9 @@ server <- function(input, output) {
   ##Extract ektacytometry data ----
   file1_ekta <- reactive({
     req(input$file1)
-    read_csv2(input$file1$datapath, skip = 19, n_max=7,  col_names = c("parameter","value"))  
+    if(input$format=='EU') {file1_ekta <- read_csv2(input$file1$datapath, skip = (file1_line()-8), n_max=7,  col_names = c("parameter","value"))  }
+    else
+    if(input$format=='US') {file1_ekta <- read_csv(input$file1$datapath, skip = (file1_line()-8), n_max=7,  col_names = c("parameter","value"))  }
   })
   
   
@@ -238,9 +247,10 @@ server <- function(input, output) {
       
       req(input$file1)
       
-      file1_info <- read_csv2(input$file1$datapath,
+      file1_info <- 
+        read_csv2(input$file1$datapath,
                            
-                           skip = 19,
+                           skip = (file1_line()-8),
                            n_max = 7,
                            col_names = FALSE
                            
@@ -268,7 +278,7 @@ server <- function(input, output) {
       
       file2_info <- read_csv2(input$file2$datapath,
                             
-                                skip = 19,
+                                skip = (file2_line()-8),
                                 n_max = 7,
                                 col_names = FALSE
                                 
@@ -291,7 +301,7 @@ server <- function(input, output) {
       
       file3_info <- read_csv2(input$file3$datapath,
                               
-                              skip = 19,
+                              skip = (file3_line()-8),
                               n_max = 7,
                               col_names = FALSE
                               
@@ -311,19 +321,19 @@ server <- function(input, output) {
       
     if (!is.null(input$file1)) { 
         file1 <- file1() 
-        fig <- plot_ly(file1, x = ~file1$O, y = ~file1$EI, name = input$file1_legend, type = 'scatter', mode = 'lines', color = I('blue')) 
+        fig <- plot_ly(file1, x = ~file1$O., y = ~file1$EI, name = input$file1_legend, type = 'scatter', mode = 'lines', color = I('blue')) 
         
         
       } 
     
     if (!is.null(input$file2)) { 
         file2 <- file2() 
-        fig <- fig %>% add_trace(file2, x = ~file2$O, y = ~file2$EI, name = input$file2_legend, type = 'scatter', mode = 'lines', color = I('red'))
+        fig <- fig %>% add_trace(file2, x = ~file2$O., y = ~file2$EI, name = input$file2_legend, type = 'scatter', mode = 'lines', color = I('red'))
     } 
       
     if (!is.null(input$file3)) { 
         file3 <- file3()
-        fig <- fig %>% add_trace(file3, x = ~file3$O, y = ~file3$EI, name = input$file3_legend, type = 'scatter', mode = 'lines', color = I('darkgreen'))
+        fig <- fig %>% add_trace(file3, x = ~file3$O., y = ~file3$EI, name = input$file3_legend, type = 'scatter', mode = 'lines', color = I('darkgreen'))
       } 
     
     #Layout
