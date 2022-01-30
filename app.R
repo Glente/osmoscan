@@ -9,10 +9,6 @@ library(plotly)
 library(magrittr)
 library(stringr)
 
-#Parameters ----
-ekta_col_names <- c("#", "tstart", "tend", "t", "Crdcnt", "Area", "SdA", "B", "SdB", "EI", "SdEI", "Eof", "O")
-
-
 # UI for app
 ui<-(pageWithSidebar(
     # title
